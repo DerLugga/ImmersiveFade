@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: ImmersiveFade
+## Notes: Hides UI Elements based on game events
+## Author: Luca
+## Version: 0.1
+## SavedVariables: ImmersiveFadeDB
+
+utils.lua
+config.lua
+core.lua
+options.lua
