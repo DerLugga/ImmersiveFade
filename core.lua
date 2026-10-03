@@ -23,6 +23,7 @@ end
 local function UpdateFrameVisibility(frameName)
     local config = ImmersiveFadeDB.frames[frameName]
     if not config or not config.enabled then return end
+    if state.lockedFrames and state.lockedFrames[frameName] then return end
 
     local frame = _G[frameName]
     if not frame or not Utils.IsFrameAccessible(frame) then return end
@@ -139,6 +140,54 @@ local function AnyChildMouseOver(...)
     return false
 end
 
+local hurtTimer = nil
+
+local function HandlePlayerHealthChange()
+    local hp = UnitHealth("player")
+    local maxHp = UnitHealthMax("player")
+    if not hp or not maxHp or maxHp == 0 then return end
+
+    local frame = _G["PlayerFrame"]
+    if not frame or not Utils.IsFrameAccessible(frame) then return end
+
+    if hp < maxHp then
+        -- Laufenden Entsperr-Timer stoppen, falls erneut Schaden genommen wurde
+        if hurtTimer then
+            hurtTimer:Cancel()
+            hurtTimer = nil
+        end
+
+        -- Frame für das normale Fade-System sperren
+        if not state.lockedFrames then state.lockedFrames = {} end
+        state.lockedFrames["PlayerFrame"] = true
+
+        -- Alten Fade abbrechen und sofort einblenden
+        if UIFrameFadeRemoveFrame then
+            UIFrameFadeRemoveFrame(frame)
+        end
+        frame.fadeInfo = nil
+
+        local currentAlpha = frame:GetAlpha()
+        local targetAlpha = 1.0
+        local fadeTime = ImmersiveFadeDB.globalFadeTime or 0.3
+
+        if currentAlpha < targetAlpha then
+            UIFrameFadeIn(frame, fadeTime, currentAlpha, targetAlpha)
+        end
+    else
+        -- Wieder 100% HP: Nach Verzögerung entsperren und normales System übernehmen lassen
+        if state.lockedFrames and state.lockedFrames["PlayerFrame"] and not hurtTimer then
+            local delay = ImmersiveFadeDB.fadeDelay or 2.0
+            hurtTimer = C_Timer.NewTimer(delay, function()
+                hurtTimer = nil
+                state.lockedFrames["PlayerFrame"] = false
+                -- Übergibt die Kontrolle wieder an die normale Routine
+                UpdateFrameVisibility("PlayerFrame")
+            end)
+        end
+    end
+end
+
 local function PollHover()
     local now = GetTime()
     local delay = ImmersiveFadeDB.fadeDelay or 2.0
@@ -189,6 +238,8 @@ eventHandler:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventHandler:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventHandler:RegisterEvent("PLAYER_TARGET_CHANGED")
 eventHandler:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventHandler:RegisterUnitEvent("UNIT_HEALTH", "player")
+eventHandler:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
 
 eventHandler:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
@@ -213,6 +264,11 @@ eventHandler:SetScript("OnEvent", function(self, event, arg1)
         _G.ImmersiveFade_RestartTicker()
 
         self:UnregisterEvent("ADDON_LOADED")
+        return
+    end
+
+    if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
+        HandlePlayerHealthChange()
         return
     end
 
