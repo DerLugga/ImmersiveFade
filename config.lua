@@ -21,6 +21,8 @@ privateTable.DefaultConfig = {
             alphaCombat = 1.0,
             alphaTarget = 1.0,
             alphaHover = 1.0,
+            alphaHealthLow = 0.5,
+            alphaManaLow = 0.5,
             hookChildren = false
         },
         ["TargetFrame"] = {
