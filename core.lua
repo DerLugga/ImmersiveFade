@@ -5,13 +5,13 @@ local function FadeFrame(frame, targetAlpha, duration)
     if not frame then return end
     if not frame._fader then
         local animGroup = frame:CreateAnimationGroup()
-        local alphaAnim = animGroup:CreateAnimationGroup("Alpha")
+        local alphaAnim = animGroup:CreateAnimation("Alpha")
         alphaAnim:SetOrder(1)
         animGroup:SetScript("OnFinished", function(self)
-            frame:setAlpha(self.targetAlpha or 1.0)
+            frame:SetAlpha(self.targetAlpha or 1.0)
         end)
         animGroup:SetScript("OnStop", function(self)
-            frame:setAlpha(self.targetAlpha or 1.0)
+            frame:SetAlpha(self.targetAlpha or 1.0)
         end)
 
         frame.fadeAnimationGroup = animGroup
@@ -35,7 +35,8 @@ end
 local function IsPlayerHealthFull()
     local health = UnitHealth("player")
     local maxHealth = UnitHealthMax("player")
-    return health >= maxHealth
+    local isFull = health >= maxHealth
+    return isFull
 end
 
 local function IsPlayerManaFull()
@@ -50,24 +51,56 @@ local function IsPlayerManaFull()
     if not mana or not maxMana or maxMana == 0 then
         return true
     end
-
     return mana >= maxMana
 end    
 
+local issecretvalue = issecretvalue or function() return false end
+
+-- Prüft sicher, ob ein Frame angezeigt wird (ohne Secret-Crash)
+local function IsShownSafe(frame)
+    if not frame then return false end
+    local shown = frame:IsShown()
+    if issecretvalue(shown) then 
+        return false 
+    end
+    return shown and true or false
+end
+
+-- Prüft sicher, ob die Maus über dem Frame liegt
+local function IsMouseOverSafe(frame)
+    if not frame then return false end
+    
+    local over = false
+    if frame.IsMouseOver then
+        over = frame:IsMouseOver()
+    elseif MouseIsOver then
+        over = MouseIsOver(frame)
+    end
+
+    -- Falls es ein Secret Boolean ist, fällt der direkte Test flach
+    if issecretvalue(over) then
+        -- Fallback: Geometrische Cursor-Prüfung über Koordinaten
+        local left, bottom, width, height = frame:GetRect()
+        local scale = frame:GetEffectiveScale()
+        if not left or not scale or scale == 0 or issecretvalue(left) or issecretvalue(scale) then
+            return false
+        end
+        local x, y = GetCursorPosition()
+        x, y = x / scale, y / scale
+        return (x >= left and x <= left + width and y >= bottom and y <= bottom + height)
+    end
+
+    return over and true or false
+end
+
+-- Rekursiver Baum-Check, komplett Secret-Value-sicher
 local function IsMouseOverHierarchy(frame)
-    if not frame or not frame:IsShown() then
+    if not IsShownSafe(frame) then
         return false
     end
 
-    if frame:IsMouseOver() then
+    if IsMouseOverSafe(frame) then
         return true
-    end
-
-    local children = {frame:GetChildren()}
-    for _, child in ipairs(children) do
-        if IsMouseOverHierarchy(child) then
-            return true
-        end
     end
 
     return false
@@ -87,13 +120,20 @@ local function GetDesiredAlpha(frameName)
         return 1.0
     end
 
-    if frameName == "PlayerFrame" then
-        if not IsPlayerHealthFull() then
-            return config.alphaHealthLow or 0.5
-        end
-        if not IsPlayerManaFull() then
-            return config.alphaManaLow or 0.5
-        end
+    --if frameName == "PlayerFrame" then
+    --    if not IsPlayerHealthFull() then
+    --        return config.alphaHealthLow or 0.5
+    --    end
+    --    if not IsPlayerManaFull() then
+    --        return config.alphaManaLow or 0.5
+    --    end
+    --end
+
+    --if frameName == "TargetFrame" and not UnitExists("target") then
+    --    return 0.0
+    --end
+    if frameName == "FocusFrame" and not UnitExists("focus") then
+        return 0.0
     end
 
     if IsHovered(frameName) then
@@ -102,6 +142,10 @@ local function GetDesiredAlpha(frameName)
 
     if UnitAffectingCombat("player") then
         return config.alphaCombat or 1.0
+    end
+
+    if UnitExists("target") then
+        return config.alphaTarget or 1.0
     end
 
     return config.alphaExplore or 0.0
@@ -137,3 +181,30 @@ end
 
 local config = ImmersiveFadeDB or {}
 local pollTicker = C_Timer.NewTicker(config.pollRate or 0.2, PollAllFrames)
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("ADDON_LOADED")
+
+initFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
+    -- Nur ausführen, wenn unser eigenes Addon geladen wurde
+    if loadedAddonName ~= addonName then
+        return
+    end
+
+    -- 2. Datenbank anlegen, falls sie bei Erstnutzung noch nil ist
+    ImmersiveFadeDB = ImmersiveFadeDB or {}
+
+    -- 3. Fehlende Defaults aus der config.lua übertragen
+    if privateTable.DefaultConfig then
+        for key, value in pairs(privateTable.DefaultConfig) do
+            if ImmersiveFadeDB[key] == nil then
+                ImmersiveFadeDB[key] = value
+            end
+        end
+    end
+
+    -- 4. Event abmelden (wird danach nicht mehr gebraucht)
+    self:UnregisterEvent("ADDON_LOADED")
+end)
+
+pollTicker:Start()
