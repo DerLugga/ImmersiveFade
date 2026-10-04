@@ -106,6 +106,9 @@ local function IsHovered(frameName)
 end
 local fadeUntil = {}
 
+local fadeUntil = {}
+local lastActiveAlpha = {}
+
 local function GetDesiredAlpha(frameName)
     if not ImmersiveFadeDB or not ImmersiveFadeDB.frames then return 1.0 end
     local config = ImmersiveFadeDB.frames[frameName]
@@ -122,6 +125,7 @@ local function GetDesiredAlpha(frameName)
 
     local now = GetTime()
     local delay = ImmersiveFadeDB.fadeDelay or 1.5
+    local baseExplore = config.alphaExplore or 0.0
 
     local isHovered = IsHovered(frameName)
     local inCombat = UnitAffectingCombat("player")
@@ -130,39 +134,35 @@ local function GetDesiredAlpha(frameName)
     local isManaLow = false
 
     if frameName == "PlayerFrame" then
-        isHealthLow = not IsPlayerHealthFull()
-        isManaLow = not IsPlayerManaFull()
+        isHealthLow = playerHealthIsLow
+        isManaLow = playerManaIsLow
     end
 
-    if isHovered or inCombat or hasTarget or isHealthLow or isManaLow then
+    local activeAlpha = nil
+
+    if isHealthLow and (config.alphaHealthLow or 0.8) ~= baseExplore then
+        activeAlpha = config.alphaHealthLow or 0.8
+    elseif isManaLow and (config.alphaManaLow or 0.8) ~= baseExplore then
+        activeAlpha = config.alphaManaLow or 0.8
+    elseif isHovered and (config.alphaHover or 1.0) ~= baseExplore then
+        activeAlpha = config.alphaHover or 1.0
+    elseif inCombat and (config.alphaCombat or 1.0) ~= baseExplore then
+        activeAlpha = config.alphaCombat or 1.0
+    elseif hasTarget and (config.alphaTarget or config.alphaCombat or 1.0) ~= baseExplore then
+        activeAlpha = config.alphaTarget or config.alphaCombat or 1.0
+    end
+
+    if activeAlpha then
         fadeUntil[frameName] = now + delay
-    end
-
-    if isHealthLow then
-        return config.alphaHealthLow or 0.8
-    end
-
-    if isManaLow then
-        return config.alphaManaLow or 0.8
-    end
-
-    if isHovered then
-        return config.alphaHover or 1.0
-    end
-
-    if inCombat then
-        return config.alphaCombat or 1.0
-    end
-
-    if hasTarget then
-        return config.alphaTarget or config.alphaCombat or 1.0
+        lastActiveAlpha[frameName] = activeAlpha
+        return activeAlpha
     end
 
     if (fadeUntil[frameName] or 0) > now then
-        return config.alphaHover or 1.0
+        return lastActiveAlpha[frameName] or (config.alphaHover or 1.0)
     end
 
-    return config.alphaExplore or 0.0
+    return baseExplore
 end
 
 local currentTargetAlphas = {}
