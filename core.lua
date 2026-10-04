@@ -56,7 +56,6 @@ end
 
 local issecretvalue = issecretvalue or function() return false end
 
--- Prüft sicher, ob ein Frame angezeigt wird (ohne Secret-Crash)
 local function IsShownSafe(frame)
     if not frame then return false end
     local shown = frame:IsShown()
@@ -66,20 +65,18 @@ local function IsShownSafe(frame)
     return shown and true or false
 end
 
--- Prüft sicher, ob die Maus über dem Frame liegt
 local function IsMouseOverSafe(frame)
     if not frame then return false end
     
     local over = false
+
     if frame.IsMouseOver then
         over = frame:IsMouseOver()
     elseif MouseIsOver then
         over = MouseIsOver(frame)
     end
 
-    -- Falls es ein Secret Boolean ist, fällt der direkte Test flach
     if issecretvalue(over) then
-        -- Fallback: Geometrische Cursor-Prüfung über Koordinaten
         local left, bottom, width, height = frame:GetRect()
         local scale = frame:GetEffectiveScale()
         if not left or not scale or scale == 0 or issecretvalue(left) or issecretvalue(scale) then
@@ -93,7 +90,6 @@ local function IsMouseOverSafe(frame)
     return over and true or false
 end
 
--- Rekursiver Baum-Check, komplett Secret-Value-sicher
 local function IsMouseOverHierarchy(frame)
     if not IsShownSafe(frame) then
         return false
@@ -186,15 +182,12 @@ local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("ADDON_LOADED")
 
 initFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
-    -- Nur ausführen, wenn unser eigenes Addon geladen wurde
     if loadedAddonName ~= addonName then
         return
     end
 
-    -- 2. Datenbank anlegen, falls sie bei Erstnutzung noch nil ist
     ImmersiveFadeDB = ImmersiveFadeDB or {}
 
-    -- 3. Fehlende Defaults aus der config.lua übertragen
     if privateTable.DefaultConfig then
         for key, value in pairs(privateTable.DefaultConfig) do
             if ImmersiveFadeDB[key] == nil then
@@ -203,7 +196,6 @@ initFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
         end
     end
 
-    -- 4. Event abmelden (wird danach nicht mehr gebraucht)
     self:UnregisterEvent("ADDON_LOADED")
 end)
 
