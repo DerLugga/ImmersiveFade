@@ -130,21 +130,16 @@ local function GetDesiredAlpha(frameName)
     local isHovered = IsHovered(frameName)
     local inCombat = UnitAffectingCombat("player")
     local hasTarget = UnitExists("target")
-    local isHealthLow = false
-    local isManaLow = false
-
-    if frameName == "PlayerFrame" then
-        isHealthLow = playerHealthIsLow
-        isManaLow = playerManaIsLow
-    end
+    local playerHealthIsLow = false
+    local playerManaIsLow = false
 
     local activeAlpha = nil
 
-    if isHealthLow and (config.alphaHealthLow or 0.8) ~= baseExplore then
-        activeAlpha = config.alphaHealthLow or 0.8
-    elseif isManaLow and (config.alphaManaLow or 0.8) ~= baseExplore then
-        activeAlpha = config.alphaManaLow or 0.8
-    elseif isHovered and (config.alphaHover or 1.0) ~= baseExplore then
+    --if playerHealthIsLow and (config.alphaHealthLow or 0.8) ~= baseExplore then
+    --    activeAlpha = config.alphaHealthLow or 0.8
+    --elseif playerManaIsLow and (config.alphaManaLow or 0.8) ~= baseExplore then
+    --    activeAlpha = config.alphaManaLow or 0.8
+    if isHovered and (config.alphaHover or 1.0) ~= baseExplore then
         activeAlpha = config.alphaHover or 1.0
     elseif inCombat and (config.alphaCombat or 1.0) ~= baseExplore then
         activeAlpha = config.alphaCombat or 1.0
@@ -216,5 +211,3 @@ initFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
 
     self:UnregisterEvent("ADDON_LOADED")
 end)
-
-pollTicker:Start()

@@ -48,7 +48,7 @@ pollSlider:SetScript("OnValueChanged", function(self, value)
     local rounded = math.floor(value * 100 + 0.5) / 100
     ImmersiveFadeDB.pollRate = rounded
     SetSliderText(self, rounded, "Polling Rate")
-    if _G.ImmersiveFade_RestartTicker then _G.ImmersiveFade_RestartTicker() end
+    --if _G.ImmersiveFade_RestartTicker then _G.ImmersiveFade_RestartTicker() end
 end)
 
 --- 3. Fade Delay (Grace Period) Slider

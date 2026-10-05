@@ -2,7 +2,7 @@
 ## Title: ImmersiveFade
 ## Notes: Hides UI Elements based on game events
 ## Author: Luca
-## Version: 0.1
+## Version: 0.2.0
 ## SavedVariables: ImmersiveFadeDB
 
 utils.lua
