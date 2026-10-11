@@ -49,6 +49,14 @@ privateTable.DefaultConfig = {
             alphaHover = 1.0,
             hookChildren = true
         },
+        ["StanceBar"] = {
+            enabled = true,
+            alphaExplore = 0.0,
+            alphaCombat = 1.0,
+            alphaTarget = 1.0,
+            alphaHover = 1.0,
+            hookChildren = true
+        },
         ["BagsBar"] = {
             enabled = true,
             alphaExplore = 0.0,

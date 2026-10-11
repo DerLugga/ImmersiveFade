@@ -202,9 +202,24 @@ initFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
     ImmersiveFadeDB = ImmersiveFadeDB or {}
 
     if privateTable.DefaultConfig then
+        -- 1. Oberste Ebene abgleichen (z.B. globalFadeTime)
         for key, value in pairs(privateTable.DefaultConfig) do
             if ImmersiveFadeDB[key] == nil then
                 ImmersiveFadeDB[key] = value
+            end
+        end
+        
+        -- 2. Tieferer Abgleich: Checkt, ob neue Frames zur Config hinzugefügt wurden
+        if privateTable.DefaultConfig.frames then
+            ImmersiveFadeDB.frames = ImmersiveFadeDB.frames or {}
+            for frameName, frameConfig in pairs(privateTable.DefaultConfig.frames) do
+                -- Wenn ein Frame (z.B. "StanceBar") noch nicht in der Datenbank des Spielers ist:
+                if ImmersiveFadeDB.frames[frameName] == nil then
+                    ImmersiveFadeDB.frames[frameName] = {}
+                    for k, v in pairs(frameConfig) do
+                        ImmersiveFadeDB.frames[frameName][k] = v
+                    end
+                end
             end
         end
     end
