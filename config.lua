@@ -4,11 +4,12 @@ privateTable.DefaultConfig = {
 
     globalFadeTime = 0.3,
     pollRate = 0.05,
-    fadeDelay = 2.0, -- Wartezeit (Grace Period) vor dem Ausblenden
+    fadeDelay = 2.0, -- Grace period (in seconds) before fading out
 
     frames = {
         ["MainMenuBar"] = {
             enabled = true,
+            duration = -1, -- -1 = use globalFadeTime
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -17,6 +18,7 @@ privateTable.DefaultConfig = {
         },
         ["PlayerFrame"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -27,6 +29,16 @@ privateTable.DefaultConfig = {
         },
         ["TargetFrame"] = {
             enabled = true,
+            duration = -1,
+            alphaExplore = 0.0,
+            alphaCombat = 1.0,
+            alphaTarget = 1.0,
+            alphaHover = 1.0,
+            hookChildren = false
+        },
+        ["FocusFrame"] = {
+            enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -35,6 +47,7 @@ privateTable.DefaultConfig = {
         },
         ["ObjectiveTrackerFrame"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 0.0,
             alphaTarget = 0.0,
@@ -43,6 +56,7 @@ privateTable.DefaultConfig = {
         },
         ["PetActionBar"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -51,6 +65,7 @@ privateTable.DefaultConfig = {
         },
         ["StanceBar"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -59,6 +74,7 @@ privateTable.DefaultConfig = {
         },
         ["BagsBar"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -67,6 +83,7 @@ privateTable.DefaultConfig = {
         },
         ["MicroMenu"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -75,6 +92,7 @@ privateTable.DefaultConfig = {
         },
         ["MainActionBar"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -83,6 +101,7 @@ privateTable.DefaultConfig = {
         },
         ["MultiBarBottomRight"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -91,6 +110,7 @@ privateTable.DefaultConfig = {
         },
         ["MultiBarBottomLeft"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -99,6 +119,7 @@ privateTable.DefaultConfig = {
         },
         ["MultiBar6"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -107,6 +128,7 @@ privateTable.DefaultConfig = {
         },
         ["MultiBar5"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -115,6 +137,7 @@ privateTable.DefaultConfig = {
         },
         ["MultiBar7"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -123,6 +146,7 @@ privateTable.DefaultConfig = {
         },
         ["MultiBarRight"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -131,6 +155,7 @@ privateTable.DefaultConfig = {
         },
         ["MultiBarLeft"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -139,6 +164,7 @@ privateTable.DefaultConfig = {
         },
         ["MainStatusTrackingBarContainer"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,
@@ -147,6 +173,7 @@ privateTable.DefaultConfig = {
         },
         ["Minimap"] = {
             enabled = true,
+            duration = -1,
             alphaExplore = 0.0,
             alphaCombat = 1.0,
             alphaTarget = 1.0,

@@ -1,11 +1,35 @@
 local addonName, privateTable = ...
 local Utils = privateTable.Utils
 
+-- Fallback for client environments without secret value protection
+local issecretvalue = issecretvalue or function() return false end
+
 local activeFades = {}
 local currentTargetAlphas = {}
 local fadeUntil = {}
 local lastActiveAlpha = {}
 local pollTicker = nil
+
+-- Timestamps for taint-free out-of-combat health/mana regeneration tracking
+local lastHealthTick = 0
+local lastManaTick = 0
+local REGEN_TICK_WINDOW = 2.2 -- Slightly above WoW's 2.0s natural health regen tick
+
+-- Separate event frame to track regeneration ticks without reading secret values
+local regenTracker = CreateFrame("Frame")
+regenTracker:RegisterUnitEvent("UNIT_HEALTH", "player")
+regenTracker:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
+
+regenTracker:SetScript("OnEvent", function(self, event, _, powerToken)
+    -- Only record clean timestamps; never read UnitHealth/UnitPower or call SetAlpha here
+    if event == "UNIT_HEALTH" then
+        lastHealthTick = GetTime()
+    elseif event == "UNIT_POWER_FREQUENT" then
+        if not issecretvalue(powerToken) and powerToken == "MANA" then
+            lastManaTick = GetTime()
+        end
+    end
+end)
 
 -- Custom frame fader to avoid taint from Blizzard's UIFrameFade API
 local customFader = CreateFrame("Frame")
@@ -44,7 +68,7 @@ local function FadeFrame(frame, targetAlpha, duration)
         return
     end
 
-    if duration == nil then
+    if duration == nil or duration < 0 then
         duration = (ImmersiveFadeDB and ImmersiveFadeDB.globalFadeTime) or 0.3
     end
 
@@ -65,9 +89,6 @@ local function FadeFrame(frame, targetAlpha, duration)
 
     customFader:Show()
 end
-
--- Fallback for client environments without secret value protection
-local issecretvalue = issecretvalue or function() return false end
 
 local function IsShownSafe(frame)
     if not frame then return false end
@@ -136,27 +157,33 @@ local function GetDesiredAlpha(frameName, frame, config, now, inCombat, hasTarge
     local baseExplore = config.alphaExplore or 0.0
 
     local isHovered = IsHovered(frame)
-    local playerHealthIsLow = false
-    local playerManaIsLow = false
+    local isPlayerFrame = (frameName == "PlayerFrame")
+    local playerHealthIsLow = isPlayerFrame and ((now - lastHealthTick) < REGEN_TICK_WINDOW)
+    local playerManaIsLow = isPlayerFrame and ((now - lastManaTick) < REGEN_TICK_WINDOW)
 
     local activeAlpha = nil
+    local updateGraceTimer = true
 
-    -- Priority order: Hover > Combat > Target
-    --if playerHealthIsLow and (config.alphaHealthLow or 0.8) ~= baseExplore then
-    --    activeAlpha = config.alphaHealthLow or 0.8
-    --elseif playerManaIsLow and (config.alphaManaLow or 0.8) ~= baseExplore then
-    --    activeAlpha = config.alphaManaLow or 0.8
+    -- Priority order: Hover > Combat > Target > Health Regen > Mana Regen
     if isHovered and (config.alphaHover or 1.0) ~= baseExplore then
         activeAlpha = config.alphaHover or 1.0
     elseif inCombat and (config.alphaCombat or 1.0) ~= baseExplore then
         activeAlpha = config.alphaCombat or 1.0
     elseif hasTarget and (config.alphaTarget or config.alphaCombat or 1.0) ~= baseExplore then
         activeAlpha = config.alphaTarget or config.alphaCombat or 1.0
+    elseif playerHealthIsLow and (config.alphaHealthLow or 1.0) ~= baseExplore then
+        activeAlpha = config.alphaHealthLow or 1.0
+        updateGraceTimer = false -- 2.2s regen tick window already acts as grace period
+    elseif playerManaIsLow and (config.alphaManaLow or 1.0) ~= baseExplore then
+        activeAlpha = config.alphaManaLow or 1.0
+        updateGraceTimer = false -- 2.2s regen tick window already acts as grace period
     end
 
     -- Refresh grace period timer while an active state is triggered
     if activeAlpha then
-        fadeUntil[frameName] = now + delay
+        if updateGraceTimer then
+            fadeUntil[frameName] = now + delay
+        end
         lastActiveAlpha[frameName] = activeAlpha
         return activeAlpha
     end
@@ -180,7 +207,12 @@ local function UpdateFrame(frameName, config, now, inCombat, hasTarget)
     if currentTargetAlphas[frameName] ~= desiredAlpha then
         currentTargetAlphas[frameName] = desiredAlpha
 
-        local duration = config.duration or ImmersiveFadeDB.globalFadeTime or 0.3
+        -- Use frame-specific duration if set (>= 0), otherwise fall back to globalFadeTime
+        local duration = ImmersiveFadeDB.globalFadeTime or 0.3
+        if config.duration ~= nil and config.duration >= 0 then
+            duration = config.duration
+        end
+
         FadeFrame(frame, desiredAlpha, duration)
     end
 end

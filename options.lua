@@ -88,11 +88,11 @@ end)
 
 local moduleTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 moduleTitle:SetPoint("TOPLEFT", 16, -180)
-moduleTitle:SetText("Modules (Click a name to edit its Alpha values):")
+moduleTitle:SetText("Modules (Click a name to edit its settings):")
 
---- RIGHT SIDE: Detail panel for frame-specific alpha settings
+--- RIGHT SIDE: Detail panel for frame-specific settings
 local detailPanel = CreateFrame("Frame", nil, panel)
-detailPanel:SetPoint("TOPLEFT", panel, "TOPLEFT", 260, -210)
+detailPanel:SetPoint("TOPLEFT", panel, "TOPLEFT", 250, -210)
 detailPanel:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -16, 50)
 detailPanel.selectedFrame = nil
 
@@ -101,9 +101,9 @@ detailTitle:SetPoint("TOPLEFT", 0, 0)
 detailTitle:SetText("Select a module to edit...")
 detailTitle:SetTextColor(0.5, 0.5, 0.5)
 
-local function CreateAlphaSlider(name, label, yOffset, dbKey)
+local function CreateAlphaSlider(name, label, xOffset, yOffset, dbKey)
     local slider = CreateFrame("Slider", name, detailPanel, "OptionsSliderTemplate")
-    slider:SetPoint("TOPLEFT", 0, yOffset)
+    slider:SetPoint("TOPLEFT", xOffset, yOffset)
     slider:SetMinMaxValues(0.0, 1.0)
     slider:SetValueStep(0.05)
     slider:SetObeyStepOnDrag(true)
@@ -124,10 +124,39 @@ local function CreateAlphaSlider(name, label, yOffset, dbKey)
     return slider
 end
 
-local sliderExplore = CreateAlphaSlider("ImmersiveFadeSliderExplore", "Explore Alpha", -40, "alphaExplore")
-local sliderTarget  = CreateAlphaSlider("ImmersiveFadeSliderTarget", "Target Alpha", -90, "alphaTarget")
-local sliderCombat  = CreateAlphaSlider("ImmersiveFadeSliderCombat", "Combat Alpha", -140, "alphaCombat")
-local sliderHover   = CreateAlphaSlider("ImmersiveFadeSliderHover", "Hover Alpha", -190, "alphaHover")
+-- Left column: Standard Alpha sliders
+local sliderExplore = CreateAlphaSlider("ImmersiveFadeSliderExplore", "Explore Alpha", 0, -40, "alphaExplore")
+local sliderTarget  = CreateAlphaSlider("ImmersiveFadeSliderTarget", "Target Alpha", 0, -90, "alphaTarget")
+local sliderCombat  = CreateAlphaSlider("ImmersiveFadeSliderCombat", "Combat Alpha", 0, -140, "alphaCombat")
+local sliderHover   = CreateAlphaSlider("ImmersiveFadeSliderHover", "Hover Alpha", 0, -190, "alphaHover")
+
+-- Right column: Frame-specific Fade Time & PlayerFrame Health/Mana sliders
+local sliderDuration = CreateFrame("Slider", "ImmersiveFadeSliderDuration", detailPanel, "OptionsSliderTemplate")
+sliderDuration:SetPoint("TOPLEFT", 190, -40)
+sliderDuration:SetMinMaxValues(-0.1, 2.0)
+sliderDuration:SetValueStep(0.1)
+sliderDuration:SetObeyStepOnDrag(true)
+sliderDuration:Hide()
+_G[sliderDuration:GetName() .. "Low"]:SetText("Global")
+_G[sliderDuration:GetName() .. "High"]:SetText("2.0s")
+
+sliderDuration:SetScript("OnValueChanged", function(self, value)
+    local selected = detailPanel.selectedFrame
+    if selected and ImmersiveFadeDB and ImmersiveFadeDB.frames and ImmersiveFadeDB.frames[selected] then
+        local text = _G[self:GetName() .. "Text"]
+        if value < 0 then
+            ImmersiveFadeDB.frames[selected].duration = -1
+            text:SetText("Fade Time: Global")
+        else
+            local rounded = math.floor(value * 10 + 0.5) / 10
+            ImmersiveFadeDB.frames[selected].duration = rounded
+            text:SetText("Fade Time: " .. rounded .. "s")
+        end
+    end
+end)
+
+local sliderHealthLow = CreateAlphaSlider("ImmersiveFadeSliderHealthLow", "Low Health Alpha", 190, -90, "alphaHealthLow")
+local sliderManaLow   = CreateAlphaSlider("ImmersiveFadeSliderManaLow", "Low Mana Alpha", 190, -140, "alphaManaLow")
 
 local uiElements = {}
 
@@ -172,12 +201,39 @@ local function SelectFrameToEdit(frameName)
     sliderHover:SetValue(hAlpha)
     _G[sliderHover:GetName() .. "Text"]:SetText("Hover Alpha: " .. hAlpha)
     sliderHover:Show()
+
+    -- Per-frame duration slider (-1 = Global)
+    local dur = cfg.duration
+    if dur == nil or dur < 0 then
+        sliderDuration:SetValue(-0.1)
+        _G[sliderDuration:GetName() .. "Text"]:SetText("Fade Time: Global")
+    else
+        sliderDuration:SetValue(dur)
+        _G[sliderDuration:GetName() .. "Text"]:SetText("Fade Time: " .. dur .. "s")
+    end
+    sliderDuration:Show()
+
+    -- Show Low Health & Low Mana sliders exclusively for PlayerFrame
+    if frameName == "PlayerFrame" then
+        local hlAlpha = cfg.alphaHealthLow or 0.5
+        sliderHealthLow:SetValue(hlAlpha)
+        _G[sliderHealthLow:GetName() .. "Text"]:SetText("Low Health Alpha: " .. hlAlpha)
+        sliderHealthLow:Show()
+
+        local mlAlpha = cfg.alphaManaLow or 0.5
+        sliderManaLow:SetValue(mlAlpha)
+        _G[sliderManaLow:GetName() .. "Text"]:SetText("Low Mana Alpha: " .. mlAlpha)
+        sliderManaLow:Show()
+    else
+        sliderHealthLow:Hide()
+        sliderManaLow:Hide()
+    end
 end
 
 --- LEFT SIDE: ScrollFrame for module categories
 local scrollFrame = CreateFrame("ScrollFrame", "ImmersiveFadeScrollFrame", panel, "UIPanelScrollFrameTemplate")
 scrollFrame:SetPoint("TOPLEFT", 16, -210)
-scrollFrame:SetPoint("BOTTOMRIGHT", panel, "BOTTOMLEFT", 230, 50)
+scrollFrame:SetPoint("BOTTOMRIGHT", panel, "BOTTOMLEFT", 225, 50)
 
 local scrollChild = CreateFrame("Frame", "ImmersiveFadeScrollChild", scrollFrame)
 scrollFrame:SetScrollChild(scrollChild)
@@ -242,7 +298,7 @@ local function UpdateLayout()
             local header = uiElements["header_" .. grp.name]
             if not header then
                 header = CreateFrame("Button", nil, scrollChild)
-                header:SetSize(190, headerHeight)
+                header:SetSize(185, headerHeight)
 
                 local highlight = header:CreateTexture(nil, "HIGHLIGHT")
                 highlight:SetAllPoints()
@@ -308,10 +364,13 @@ local function UpdateLayout()
                         end)
 
                         btn = CreateFrame("Button", nil, scrollChild)
-                        btn:SetSize(160, 20)
+                        btn:SetSize(155, 20)
 
                         local btnText = btn:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
                         btnText:SetPoint("LEFT", 0, 0)
+                        btnText:SetWidth(150)
+                        btnText:SetJustifyH("LEFT")
+                        btnText:SetWordWrap(false)
                         btnText:SetText(frameName)
                         btn.text = btnText
 
@@ -347,10 +406,75 @@ local function UpdateLayout()
         end
     end
 
-    scrollChild:SetSize(210, math.abs(yOffset))
+    scrollChild:SetSize(205, math.abs(yOffset))
 end
 
 UpdateLayout()
+
+--- Live-reset all settings to DefaultConfig without requiring a UI reload
+local function ResetAllToDefaults()
+    if not privateTable.DefaultConfig then return end
+
+    ImmersiveFadeDB = {}
+
+    -- 1. Restore top-level settings
+    for key, value in pairs(privateTable.DefaultConfig) do
+        if key ~= "frames" then
+            ImmersiveFadeDB[key] = value
+        end
+    end
+
+    -- 2. Deep-copy default frame configurations and reset active frame states
+    ImmersiveFadeDB.frames = {}
+    if privateTable.DefaultConfig.frames then
+        for frameName, defaultFrameConfig in pairs(privateTable.DefaultConfig.frames) do
+            ImmersiveFadeDB.frames[frameName] = {}
+            for k, v in pairs(defaultFrameConfig) do
+                ImmersiveFadeDB.frames[frameName][k] = v
+            end
+            if privateTable.ResetFrame then
+                privateTable.ResetFrame(frameName)
+            end
+            if uiElements["cb_" .. frameName] then
+                uiElements["cb_" .. frameName]:SetChecked(defaultFrameConfig.enabled)
+            end
+        end
+    end
+
+    -- 3. Refresh global sliders in the UI
+    fadeSlider:SetValue(ImmersiveFadeDB.globalFadeTime or 0.3)
+    SetSliderText(fadeSlider, ImmersiveFadeDB.globalFadeTime or 0.3, "Global Fade Time")
+
+    pollSlider:SetValue(ImmersiveFadeDB.pollRate or 0.05)
+    SetSliderText(pollSlider, ImmersiveFadeDB.pollRate or 0.05, "Polling Rate")
+
+    delaySlider:SetValue(ImmersiveFadeDB.fadeDelay or 2.0)
+    SetSliderText(delaySlider, ImmersiveFadeDB.fadeDelay or 2.0, "Fade Delay (Grace)")
+
+    -- 4. Refresh detail panel if a module is currently selected
+    if detailPanel.selectedFrame then
+        SelectFrameToEdit(detailPanel.selectedFrame)
+    end
+
+    -- 5. Restart ticker with default poll rate
+    if privateTable.RestartTicker then
+        privateTable.RestartTicker()
+    end
+end
+
+--- Confirmation dialog for resetting configuration
+StaticPopupDialogs["IMMERSIVEFADE_RESET_CONFIRM"] = {
+    text = "Are you sure you want to reset all ImmersiveFade settings to their default values?",
+    button1 = YES or "Yes",
+    button2 = NO or "No",
+    OnAccept = function()
+        ResetAllToDefaults()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
 
 --- Button to reset configuration to defaults
 local clearBtn = CreateFrame("Button", "ImmersiveFadeClearBtn", panel, "UIPanelButtonTemplate")
@@ -358,8 +482,7 @@ clearBtn:SetSize(120, 24)
 clearBtn:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 16, 16)
 clearBtn:SetText("Clear Config")
 clearBtn:SetScript("OnClick", function()
-    ImmersiveFadeDB = nil
-    ReloadUI()
+    StaticPopup_Show("IMMERSIVEFADE_RESET_CONFIRM")
 end)
 
 --- Register the options panel with the client's Settings / InterfaceOptions API
@@ -368,8 +491,8 @@ if Settings and Settings.RegisterCanvasLayoutCategory then
     category = Settings.RegisterCanvasLayoutCategory(panel, "ImmersiveFade")
     category.ID = "ImmersiveFade"
     Settings.RegisterAddOnCategory(category)
-elseif InterfaceOptions_AddCategory then
-    InterfaceOptions_AddCategory(panel)
+elseif _G.InterfaceOptions_AddCategory then
+    _G.InterfaceOptions_AddCategory(panel)
 end
 
 --- Slash Commands
@@ -379,8 +502,8 @@ SlashCmdList["IMMERSIVEFADE"] = function()
     if Settings and Settings.OpenToCategory and category then
         local catID = category.ID or (category.GetID and category:GetID()) or "ImmersiveFade"
         Settings.OpenToCategory(catID)
-    elseif InterfaceOptionsFrame_OpenToCategory then
-        InterfaceOptionsFrame_OpenToCategory(panel)
-        InterfaceOptionsFrame_OpenToCategory(panel)
+    elseif _G.InterfaceOptionsFrame_OpenToCategory then
+        _G.InterfaceOptionsFrame_OpenToCategory(panel)
+        _G.InterfaceOptionsFrame_OpenToCategory(panel)
     end
 end
