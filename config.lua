@@ -7,6 +7,33 @@ privateTable.DefaultConfig = {
     fadeDelay = 2.0, -- Grace period (in seconds) before fading out
 
     frames = {
+        ["KT_ObjectiveTrackerFrame"] = {
+            enabled = true,
+            duration = -1,
+            alphaExplore = 0.0,
+            alphaCombat = 1.0,
+            alphaTarget = 1.0,
+            alphaHover = 1.0,
+            hookChildren = true
+        },
+        ["GamepadMainActionBarFrame"] = {
+            enabled = true,
+            duration = -1,
+            alphaExplore = 0.0,
+            alphaCombat = 1.0,
+            alphaTarget = 1.0,
+            alphaHover = 1.0,
+            hookChildren = true
+        },
+        ["MultiCastActionBarFrame"] = {
+            enabled = true,
+            duration = -1,
+            alphaExplore = 0.0,
+            alphaCombat = 1.0,
+            alphaTarget = 1.0,
+            alphaHover = 1.0,
+            hookChildren = true
+        },
         ["MainMenuBar"] = {
             enabled = true,
             duration = -1, -- -1 = use globalFadeTime

@@ -258,7 +258,9 @@ local groupMap = {
     ["ObjectiveTrackerFrame"] = "HUD & Trackers",
     ["Minimap"] = "HUD & Trackers",
     ["MinimapCluster"] = "HUD & Trackers",
-    ["MainStatusTrackingBarContainer"] = "HUD & Trackers"
+    ["MainStatusTrackingBarContainer"] = "HUD & Trackers",
+    ["MultiCastActionBarFrame"] = "HUD & Trackers",
+    ["GamepadMainActionBarFrame"] = "Action Bars",
 }
 
 local groups = {
